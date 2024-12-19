@@ -12,9 +12,14 @@ try:
 except ModuleNotFoundError as e:
     import subprocess
     import sys
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib", "seaborn"])
-    import matplotlib.pyplot as plt
-    import seaborn as sns
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib", "seaborn"])
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+    except subprocess.CalledProcessError as install_error:
+        logger.error(f"Failed to install required libraries: {install_error}")
+        st.error("Failed to install required libraries. Please install 'matplotlib' and 'seaborn' manually.")
+        st.stop()
 
 # Set up logging (Optional: Adjust logging level as needed)
 logging.basicConfig(level=logging.INFO)
