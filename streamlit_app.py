@@ -2,9 +2,19 @@ import streamlit as st
 import logging
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
 from PIL import Image
+import threading
+
+# Check and install required libraries
+try:
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+except ModuleNotFoundError as e:
+    import subprocess
+    import sys
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "matplotlib", "seaborn"])
+    import matplotlib.pyplot as plt
+    import seaborn as sns
 
 # Set up logging (Optional: Adjust logging level as needed)
 logging.basicConfig(level=logging.INFO)
@@ -31,6 +41,9 @@ def load_data():
         logger.error(f"Error loading data: {e}")
         st.error(f"Error loading data: {e}")
         return None, None
+
+# Create a lock object
+lock = threading.Lock()
 
 # Main function
 def main():
@@ -92,51 +105,57 @@ def main():
     st.subheader("Hourly Bike Rentals (2012)")
     st.write("Visualisasi ini menunjukkan rata-rata jumlah penyewaan sepeda per jam pada tahun 2012, dibedakan berdasarkan hari kerja dan akhir pekan.")
     
-    fig1, ax1 = plt.subplots(figsize=(12, 6))
-    average_rentals_per_hour = filtered_hour_df.groupby(['hr', 'is_weekend'])['cnt'].mean().reset_index()
-    sns.lineplot(data=average_rentals_per_hour, x='hr', y='cnt', hue='is_weekend', ax=ax1)
-    ax1.set_title('Rata-rata Penyewaan Sepeda per Jam (2012)')
-    ax1.set_xlabel('Jam')
-    ax1.set_ylabel('Jumlah Penyewaan')
-    ax1.set_xticks(range(24))
-    ax1.legend(title='Tipe Hari', labels=['Hari Kerja', 'Akhir Pekan'])
-    ax1.grid(True)
-    st.pyplot(fig1)
+    with lock:
+        fig1, ax1 = plt.subplots(figsize=(12, 6))
+        average_rentals_per_hour = filtered_hour_df.groupby(['hr', 'is_weekend'])['cnt'].mean().reset_index()
+        sns.lineplot(data=average_rentals_per_hour, x='hr', y='cnt', hue='is_weekend', ax=ax1)
+        ax1.set_title('Rata-rata Penyewaan Sepeda per Jam (2012)')
+        ax1.set_xlabel('Jam')
+        ax1.set_ylabel('Jumlah Penyewaan')
+        ax1.set_xticks(range(24))
+        ax1.legend(title='Tipe Hari', labels=['Hari Kerja', 'Akhir Pekan'])
+        ax1.grid(True)
+        st.pyplot(fig1)
 
     # 2. Weekend vs Weekday Distribution
     st.write("Box plot ini menunjukkan sebaran penyewaan sepeda pada hari kerja dan akhir pekan pada tahun 2012.")
-    fig2, ax2 = plt.subplots(figsize=(8, 6))
-    sns.boxplot(data=filtered_hour_df, x='is_weekend', y='cnt', ax=ax2)
-    ax2.set_title('Distribusi Penyewaan Sepeda pada Hari Kerja dan Akhir Pekan (2012)')
-    ax2.set_xlabel('Tipe Hari')
-    ax2.set_ylabel('Jumlah Penyewaan')
-    ax2.set_xticklabels(['Hari Kerja', 'Akhir Pekan'])
-    ax2.grid(True)
-    st.pyplot(fig2)
+    
+    with lock:
+        fig2, ax2 = plt.subplots(figsize=(8, 6))
+        sns.boxplot(data=filtered_hour_df, x='is_weekend', y='cnt', ax=ax2)
+        ax2.set_title('Distribusi Penyewaan Sepeda pada Hari Kerja dan Akhir Pekan (2012)')
+        ax2.set_xlabel('Tipe Hari')
+        ax2.set_ylabel('Jumlah Penyewaan')
+        ax2.set_xticklabels(['Hari Kerja', 'Akhir Pekan'])
+        ax2.grid(True)
+        st.pyplot(fig2)
 
     # 3. Summer 2011 Analysis
     st.subheader("Summer 2011 Bike Rentals (Impact of Weather)")
     st.write("Visualisasi ini menunjukkan hubungan antara suhu dan jumlah penyewaan sepeda selama musim panas tahun 2011, serta rata-rata penyewaan berdasarkan kondisi cuaca.")
 
     # Temperature vs Rentals
-    fig3, ax3 = plt.subplots(figsize=(10, 6))
-    sns.scatterplot(data=filtered_day_df, x='temp', y='cnt', hue='weathersit', ax=ax3)
-    ax3.set_title('Hubungan antara Suhu dan Jumlah Penyewaan (Musim Panas 2011)')
-    ax3.set_xlabel('Suhu (Celcius)')
-    ax3.set_ylabel('Jumlah Penyewaan')
-    ax3.grid(True)
-    st.pyplot(fig3)
+    with lock:
+        fig3, ax3 = plt.subplots(figsize=(10, 6))
+        sns.scatterplot(data=filtered_day_df, x='temp', y='cnt', hue='weathersit', ax=ax3)
+        ax3.set_title('Hubungan antara Suhu dan Jumlah Penyewaan (Musim Panas 2011)')
+        ax3.set_xlabel('Suhu (Celcius)')
+        ax3.set_ylabel('Jumlah Penyewaan')
+        ax3.grid(True)
+        st.pyplot(fig3)
 
     # Weather Impact
     average_rentals_by_weather = filtered_day_df.groupby('weathersit')['cnt'].mean().reset_index()
-    fig4, ax4 = plt.subplots(figsize=(8, 6))
-    sns.barplot(data=average_rentals_by_weather, x='weathersit', y='cnt', ax=ax4)
-    ax4.set_title('Rata-rata Penyewaan Sepeda berdasarkan Kondisi Cuaca (Musim Panas 2011)')
-    ax4.set_xlabel('Kondisi Cuaca')
-    ax4.set_ylabel('Jumlah Penyewaan')
-    ax4.set_xticklabels(['Cerah', 'Berawan', 'Gerimis', 'Hujan Lebat'])
-    ax4.grid(True)
-    st.pyplot(fig4)
+    
+    with lock:
+        fig4, ax4 = plt.subplots(figsize=(8, 6))
+        sns.barplot(data=average_rentals_by_weather, x='weathersit', y='cnt', ax=ax4)
+        ax4.set_title('Rata-rata Penyewaan Sepeda berdasarkan Kondisi Cuaca (Musim Panas 2011)')
+        ax4.set_xlabel('Kondisi Cuaca')
+        ax4.set_ylabel('Jumlah Penyewaan')
+        ax4.set_xticklabels(['Cerah', 'Berawan', 'Gerimis', 'Hujan Lebat'])
+        ax4.grid(True)
+        st.pyplot(fig4)
 
 if __name__ == "__main__":
     main()
